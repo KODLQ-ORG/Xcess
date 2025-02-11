@@ -13,7 +13,7 @@ const updateEarliestAccessReview = async (applicationId: number) => {
     return b.review_id - a.review_id;
   });
 
-  var latestAccessReviews = [];
+  const latestAccessReviews = [];
   const userIds = new Set();
 
   for (const review of accessReviews) {
