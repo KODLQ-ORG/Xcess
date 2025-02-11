@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model access_reviews {
+  review_id                                   Int           @id @default(autoincrement())
+  application_id                              Int
+  user_id                                     String       @db.VarChar(255)
+  access_level                                String
+  access_justification                        String
+  access_review_date                          DateTime      @default(now()) @db.Timestamp(6)
+  access_approver                             String       @db.VarChar(255)
+  users_access_reviews_access_approverTousers users?        @relation("access_reviews_access_approverTousers", fields: [access_approver], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  applications                                applications? @relation(fields: [application_id], references: [application_id], onDelete: Cascade)
+  users_access_reviews_user_idTousers         users?        @relation("access_reviews_user_idTousers", fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model application_reviewers {
+  application_id Int
+  user_id        String       @db.VarChar(255)
+  applications   applications @relation(fields: [application_id], references: [application_id], onDelete: NoAction, onUpdate: NoAction)
+  users          users        @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([application_id, user_id])
+}
+
+model applications {
+  application_name      String                  @db.VarChar(255)
+  application_owner     String?                 @db.VarChar(255)
+  auth_method           String?                 @db.VarChar(255)
+  pii                   Boolean?
+  financial_data        Boolean?
+  intellectual_property Boolean?
+  latest_access_review  DateTime?               @db.Timestamp(6)
+  application_id        Int                     @id @default(autoincrement())
+  application_status    String?                 @db.VarChar(255)
+  application_purpose   String?                 @db.VarChar(255)
+  access_reviews        access_reviews[]
+  application_reviewers application_reviewers[]
+  users                 users?                  @relation(fields: [application_owner], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_application_owner")
+
+  @@unique([application_id, application_owner])
+}
+
+model external_users {
+  user_id   String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  full_name String  @db.VarChar(255)
+  email     String  @unique @db.VarChar(255)
+  company   String? @db.VarChar(255)
+}
+
+model users {
+  user_id                                              String                  @id @default(dbgenerated("nextval('users_user_id_seq'::regclass)")) @db.VarChar(255)
+  display_name                                         String                  @db.VarChar(255)
+  email                                                String                  @unique @db.VarChar(255)
+  first_name                                           String?                 @db.VarChar(255)
+  last_name                                            String?                 @db.VarChar(255)
+  job_title                                            String?                 @db.VarChar(255)
+  department                                           String?                 @db.VarChar(255)
+  is_active                                            Boolean?
+  access_reviews_access_reviews_access_approverTousers access_reviews[]        @relation("access_reviews_access_approverTousers")
+  access_reviews_access_reviews_user_idTousers         access_reviews[]        @relation("access_reviews_user_idTousers")
+  application_reviewers                                application_reviewers[]
+  applications                                         applications[]
+}
